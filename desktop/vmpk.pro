@@ -12,7 +12,7 @@
 # with this program; If not, see <http://www.gnu.org/licenses/>.
 TEMPLATE = app
 TARGET = vmpk
-VERSION = 0.4.99
+VERSION = 0.5.0
 QT += core \
     gui \
     xml \
@@ -85,7 +85,7 @@ linux*:!simulator {
     }
 }
 
-macx { 
+macx {
     CONFIG += x86 \
         ppc
     ICON = data/vmpk.icns
@@ -111,15 +111,15 @@ macx {
         $$[QT_INSTALL_TRANSLATIONS]/qt_fr.qm \
         $$[QT_INSTALL_TRANSLATIONS]/qt_ru.qm \
         $$[QT_INSTALL_TRANSLATIONS]/qt_sv.qm \
-        $$[QT_INSTALL_TRANSLATIONS]/qt_zh_CN.qm \
-        $$OUT_PWD/vmpk_cs.qm \
-        $$OUT_PWD/vmpk_de.qm \
-        $$OUT_PWD/vmpk_es.qm \
-        $$OUT_PWD/vmpk_fr.qm \
-        $$OUT_PWD/vmpk_nl.qm \
-        $$OUT_PWD/vmpk_ru.qm \
-        $$OUT_PWD/vmpk_sv.qm \
-        $$OUT_PWD/vmpk_zh_CN.qm
+        #$$[QT_INSTALL_TRANSLATIONS]/qt_zh_CN.qm \
+        vmpk_cs.qm \
+        vmpk_de.qm \
+        vmpk_es.qm \
+        vmpk_fr.qm \
+        #vmpk_nl.qm \
+        vmpk_ru.qm \
+        vmpk_sv.qm
+        #vmpk_zh_CN.qm
     BUNDLE_RES.path = Contents/Resources
     QMAKE_BUNDLE_DATA += BUNDLE_RES
     LIBS += -framework \
@@ -131,7 +131,7 @@ macx {
         -framework \
         Carbon
 }
-irix* { 
+irix* {
     CONFIG += x11
     DEFINES += __IRIX_MD__
     DEFINES += RAWKBD_SUPPORT
@@ -215,9 +215,9 @@ TRANSLATIONS +=  translations/vmpk_cs.ts \
     translations/vmpk_de.ts \
     translations/vmpk_es.ts \
     translations/vmpk_fr.ts \
-    translations/vmpk_nl.ts \
+    #translations/vmpk_nl.ts \
     translations/vmpk_ru.ts \
-    translations/vmpk_sv.ts \
-    translations/vmpk_zh_CN.ts
+    translations/vmpk_sv.ts
+    #translations/vmpk_zh_CN.ts
 
 include(updateqm.pri)
