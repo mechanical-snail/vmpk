@@ -19,7 +19,7 @@
 #include "keyboardmap.h"
 
 #include <QtCore/QFile>
-#include <QtXml/QXmlStreamReader>
+#include <QDomDocument>
 #include <QtXml/QXmlStreamWriter>
 #include <QtGui/QKeySequence>
 #include <QtGui/QMessageBox>
@@ -54,42 +54,63 @@ void KeyboardMap::saveToXMLFile(const QString fileName)
 
 void KeyboardMap::initializeFromXML(QIODevice *dev)
 {
-    QXmlStreamReader reader(dev);
-    clear();
-    while (!reader.atEnd()) {
-        reader.readNext();
-        if (reader.isStartElement()) {
-            if (reader.name() == (m_rawMode?"rawkeymap":"keyboardmap")) {
-                reader.readNext();
-                while (reader.isWhitespace())
-                    reader.readNext();
-                while (reader.isStartElement()) {
-                    if (reader.name() == "mapping") {
-                        QString key = reader.attributes().value(m_rawMode?"keycode":"key").toString();
-                        QString sn = reader.attributes().value("note").toString();
-                        bool ok = false;
-                        int note = sn.toInt(&ok);
-                        if (ok) {
-                            if (m_rawMode) {
-                                int keycode = key.toInt(&ok);
-                                if (ok) insert(keycode, note);
-                            } else {
-                                QKeySequence ks(key);
-                                insert(ks[0], note);
-                            }
-                        }
-                    }
-                    reader.readNext();
-                    while (reader.isWhitespace() || reader.isEndElement())
-                        reader.readNext();
-                }
-            } else {
-                reader.readNext();
-            }
-        }
+    QDomDocument doc;
+    
+    // Read in document, checking for well-formedness
+    QString errorMsg;
+    int errorLine;
+    int errorCol;
+    if (!doc.setContent(dev, true, &errorMsg, &errorLine, &errorCol)) {
+        reportError(QString(), tr("Error reading XML"), tr("Invalid XML at line %1 column %2: %3").arg(errorLine).arg(errorCol).arg(errorMsg));
+        return;
     }
-    if (reader.hasError()) {
-        reportError(QString(), tr("Error reading XML"), reader.errorString() );
+    clear();
+    
+    // Make sure it's a keymap of the right type/version
+    const QDomElement root = doc.documentElement();
+    const QString desiredMode = m_rawMode?"rawkeymap":"keyboardmap";
+    if (root.tagName() != desiredMode) {
+        reportError(QString(), tr("Error reading XML keyboard map"), tr("Type of key map (%1) doesn't match mode (%2)").arg(root.tagName()).arg(desiredMode));
+        return;
+    }
+    if (!root.hasAttribute("version") || root.attribute("version") != "1.0") {
+        reportError(QString(), tr("Error reading XML keyboard map"), tr("Keymap version not specified or not supported"));
+        return;
+    }
+    
+    // Read each mapping element
+    QDomElement mapping = root.firstChildElement();
+    while (!mapping.isNull()) {
+        if (mapping.tagName() == "mapping") { // make sure it's actually the right tag
+            const QString keyAttrName = m_rawMode?"keycode":"key"; // desired
+            if (!mapping.hasAttribute(keyAttrName) || !mapping.hasAttribute("note")) {
+                reportError(QString(), tr("Error reading XML keyboard map"), tr("Missing attribute for mapping"));
+                return;
+            }
+            const QString key = mapping.attribute(keyAttrName);
+            const QString sn = mapping.attribute("note");
+            bool ok = false;
+            const int note = sn.toInt(&ok);
+            if (!ok) {
+                reportError(QString(), tr("Error reading XML keyboard map"), tr("Bogus note number %1").arg(sn));
+                return;
+            }
+            if (m_rawMode) {
+                int keycode = key.toInt(&ok);
+                if (!ok) {
+                    reportError(QString(), tr("Error reading XML keyboard map"), tr("Bogus keycode %1").arg(key));
+                    return;
+                }
+                insert(keycode, note);
+            } else {
+                QKeySequence ks(key);
+                insert(ks[0], note);
+            }
+        } else {
+            reportError(QString(), tr("Error reading XML keyboard map"), tr("Bogus element %1 in keyboard map (expected mapping)").arg(mapping.tagName()));
+            return;
+        }
+        mapping = mapping.nextSiblingElement();
     }
 }
 
